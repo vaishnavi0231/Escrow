@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Dashboard (Simple)</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 300px;
+            margin: 20px auto;
+            padding: 10px;
+            border: 1px solid black;
+        }
+
+        h2 {
+            font-size: 20px;
+            text-align: left;
+            margin: 5px 0;
+        }
+
+        input, select, button {
+            width: 95%;
+            margin-top: 10px;
+            padding: 5px;
+            border: 1px solid gray;
+            font-size: 14px;
+        }
+
+        button {
+            background: #ccc;
+        }
+
+        .switch-link {
+            font-size: 12px;
+            color: blue;
+            cursor: pointer;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .stock-box {
+            margin: 8px 0;
+            padding: 5px;
+            border: 1px solid #666;
+            background: #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- Register -->
+<div id="registerBox" class="container">
+    <h2>Create Account</h2>
+    <input id="regEmail" type="email" placeholder="Enter email">
+    <button onclick="register()">Register</button>
+    <span class="switch-link" onclick="showLogin()">Already registered? Login</span>
+</div>
+
+<!-- Login -->
+<div id="loginBox" class="container" style="display:none;">
+    <h2>Login</h2>
+    <input id="email" type="email" placeholder="Enter email">
+    <button onclick="login()">Login</button>
+    <span class="switch-link" onclick="showRegister()">New user? Register</span>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboardBox" class="container" style="display:none;">
+    <h2 id="welcome"></h2>
+
+    <select id="stockSelect">
+        <option value="">Select stock</option>
+        <option>GOOG</option>
+        <option>TSLA</option>
+        <option>AMZN</option>
+        <option>META</option>
+        <option>NVDA</option>
+    </select>
+
+    <button onclick="subscribe()">Subscribe</button>
+
+    <div id="stocksDiv"></div>
+</div>
+
+<script>
+let currentUser = "";
+let intervals = {};
+
+function showLogin() {
+    registerBox.style.display = "none";
+    loginBox.style.display = "block";
+}
+function showRegister() {
+    loginBox.style.display = "none";
+    registerBox.style.display = "block";
+}
+
+function register() {
+    let email = regEmail.value.trim();
+    if (!email) return alert("Enter email");
+
+    let users = JSON.parse(localStorage.getItem("users") || "[]");
+
+    if (users.includes(email)) {
+        return alert("Already registered");
+    }
+
+    users.push(email);
+    localStorage.setItem("users", JSON.stringify(users));
+
+    alert("Registered");
+    showLogin();
+}
+
+function login() {
+    let email = document.getElementById("email").value.trim();
+    if (!email) return alert("Enter email");
+
+    let users = JSON.parse(localStorage.getItem("users") || "[]");
+    if (!users.includes(email)) return alert("Not registered");
+
+    currentUser = email;
+
+    if (!localStorage.getItem(currentUser)) {
+        localStorage.setItem(currentUser, JSON.stringify([]));
+    }
+
+    welcome.innerText = "User: " + email;
+    loginBox.style.display = "none";
+    dashboardBox.style.display = "block";
+
+    loadSubscriptions();
+}
+
+function loadSubscriptions() {
+    let stocks = JSON.parse(localStorage.getItem(currentUser));
+    stocks.forEach(s => addStockBox(s));
+}
+
+function subscribe() {
+    let stock = stockSelect.value;
+    if (!stock) return alert("Select stock");
+
+    let stocks = JSON.parse(localStorage.getItem(currentUser));
+
+    if (stocks.includes(stock)) return alert("Already added");
+
+    stocks.push(stock);
+    localStorage.setItem(currentUser, JSON.stringify(stocks));
+
+    addStockBox(stock);
+}
+
+function addStockBox(stock) {
+    let div = document.createElement("div");
+    div.className = "stock-box";
+    div.id = "box-" + stock;
+
+    div.innerHTML = `
+        <span>${stock}</span>
+        <span id="p-${stock}">--</span>
+    `;
+
+    stocksDiv.appendChild(div);
+
+    intervals[stock] = setInterval(() => {
+        let price = (Math.random() * 500 + 50).toFixed(2);
+        document.getElementById("p-" + stock).innerText = price;
+    }, 1000);
+}
+
+window.addEventListener("storage", () => {
+    if (event.key === currentUser) {
+        stocksDiv.innerHTML = "";
+        loadSubscriptions();
+    }
+});
+</script>
+
+</body>
+</html>
